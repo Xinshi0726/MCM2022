@@ -1,0 +1,29 @@
+x = xlsread('第三节课作业（熵值法）.xlsx')
+
+ind = ones(size(x,2),1)%正向写1，负向写2
+
+[n,m]=size(x); % n个样本, m个指标 %%数据的归一化处理
+for i=1:m 
+    if ind(i)==1 %正向指标归一化 
+        X(:,i)=guiyi(x(:,i),1,0.002,1); %若归一化到[0,1], 0会出问题 
+    else %负向指标归一化 
+        X(:,i)=guiyi(x(:,i),2,0.002,1); 
+    end
+end
+%%计算第j个指标下，第i个样本占该指标的比重p(i,j)
+for i=1:n 
+    for j=1:m 
+        p(i,j)=X(i,j)/sum(X(:,j)); 
+    end
+end
+%%计算第j个指标的熵值e(j) 
+k=1/log(n); 
+for j=1:m 
+    e(j)=-k*sum(p(:,j).*log(p(:,j)));
+end
+d=ones(1,m)-e; %计算信息熵冗余度 
+w=d./sum(d); %求权值w
+s=X*w'; %求综合得分
+
+
+plot(2017:-1:2010,s)
