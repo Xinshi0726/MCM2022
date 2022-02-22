@@ -31,6 +31,9 @@ class budget:
         elif stock_type == GOLD:
             return self.gold_stock
 
+    def addLog(self, add_v):
+        self.log.append(add_v)
+
     def getLog(self):
         return self.log
 
@@ -53,7 +56,7 @@ class budget:
 
         self.add_stock(current_price, stock_bought, stock_type)
         if stock_bought != 0:
-            self.log.append([day, stock_type, stock_bought, self.get_stock(stock_type), self.money])
+            self.log.append([day, stock_type, stock_bought, self.get_stock(stock_type), self.money, self.get_stock(stock_type) * current_price + self.money])
         
 
     def sell(self, stock_type, current_price, percent, day):
@@ -68,7 +71,7 @@ class budget:
         
         self.money +=  stock_sold * current_price
         if stock_sold != 0:
-            self.log.append([day, stock_type, -stock_sold, self.get_stock(stock_type), self.money])
+            self.log.append([day, stock_type, -stock_sold, self.get_stock(stock_type), self.money, self.get_stock(stock_type) * current_price + self.money])
 
 
 
@@ -162,7 +165,16 @@ ma30 = ma_list[1]
 # Start simulation
 for i in range(31, len(ground_truth)):
     current_price = ground_truth[i]
-
+    '''
+    intersect = curve_intersect([ma5[i-1], ma5[i]], [ma30[i-1], ma30[i]])
+    
+    if intersect == 1:
+        current_budget.buy(BCHAIN, current_price, buy_percent, i)
+    if intersect == -1:
+        current_budget.sell(BCHAIN, current_price, sell_percent, i)
+    '''
+    
+    
     # Before the ml data's validity small enough to use: directly use daily ma
     if i < valid_date(predict, ground_truth) or i >= len(ground_truth) - predicted_day * 2:
         intersect = curve_intersect([ma5[i-1], ma5[i]], [ma30[i-1], ma30[i]])
@@ -174,13 +186,11 @@ for i in range(31, len(ground_truth)):
 
     # Once the ml data's validity small enough to use: Use ML data to sell/buy ahead
     else:
-        '''Do ma analysis based on ML data'''
         predicted_ma = getMa([5, 30], ground_truth[i - 31 : i + 1] + getPrediction(predict, i))
         predicted_ma5 = predicted_ma[0]
         predicted_ma30 = predicted_ma[1]
         #print(i, predicted_ma, getPrediction(predict, i))
 
-        '''Go through today & future 5 days to see if ma5/ma30 intersect'''
 
         for j in range(1, predicted_day + 1):
             intersect = curve_intersect([predicted_ma5[-(j + 1)], predicted_ma5[-j]], [predicted_ma30[-j - 1], predicted_ma30[-j]])
@@ -191,7 +201,8 @@ for i in range(31, len(ground_truth)):
             if intersect == -1:
                 current_budget.sell(BCHAIN, current_price, sell_percent, i)
                 break
-
+    
+    
 '''
     if i == 250:
         break
@@ -203,6 +214,11 @@ print(current_budget.getLog()[-1][-1] + current_budget.getLog()[-1][-2] * ground
 for i in range(31, 300):
     print(i, ma_list[0][i], ma_list[1][i])
 '''
+
+final_value = current_budget.getLog()[-1].copy()
+final_value[0] = len(ground_truth) - 1
+final_value[-1] = final_value[-2] + final_value[-3] * ground_truth[-1]
+current_budget.addLog(final_value)
 
 log_df = pd.DataFrame(current_budget.getLog())
 print(log_df)
